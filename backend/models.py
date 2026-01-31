@@ -44,12 +44,12 @@ class ActionLogResponse(BaseModel):
     item: str
     amount: float
     subcategory: Optional[str]
-    time_of_day: Optional[TimeOfDay]
+    time_of_day: Optional[str] = None  # Changed to str for flexibility
     location: Optional[str]
     notes: Optional[str]
     co2e_kg: float
     water_l: float
-    created_at: datetime
+    created_at: Optional[datetime] = None  # Made optional for flexibility
 
 
 class ImpactSummary(BaseModel):

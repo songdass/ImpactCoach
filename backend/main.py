@@ -5,7 +5,7 @@ A minimal MVP for tracking daily environmental impact and receiving
 personalized recommendations for reducing carbon footprint.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -136,12 +136,12 @@ async def create_action(action: ActionLogCreate):
             item=action.item,
             amount=action.amount,
             subcategory=action.subcategory,
-            time_of_day=action.time_of_day,
+            time_of_day=action.time_of_day.value if action.time_of_day else "standard",
             location=action.location,
             notes=action.notes,
             co2e_kg=co2e_kg,
             water_l=water_l,
-            created_at=date.today()
+            created_at=datetime.now()
         )
 
     except FactorNotFoundError as e:
@@ -174,23 +174,34 @@ async def get_actions(
         query_date = target_date or date.today()
         actions = get_actions_by_date(query_date)
 
-    return [
-        ActionLogResponse(
+    result = []
+    for a in actions:
+        # Parse date
+        action_date = a["date"] if isinstance(a["date"], date) else date.fromisoformat(str(a["date"]))
+
+        # Parse created_at safely
+        created = a.get("created_at")
+        if created and isinstance(created, str):
+            try:
+                created = datetime.fromisoformat(created.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                created = None
+
+        result.append(ActionLogResponse(
             id=a["id"],
-            date=a["date"] if isinstance(a["date"], date) else date.fromisoformat(a["date"]),
+            date=action_date,
             category=ActionCategory(a["category"]),
             item=a["item"],
             amount=a["amount"],
-            subcategory=a["subcategory"],
-            time_of_day=a["time_of_day"],
-            location=a["location"],
-            notes=a["notes"],
+            subcategory=a.get("subcategory"),
+            time_of_day=a.get("time_of_day"),
+            location=a.get("location"),
+            notes=a.get("notes"),
             co2e_kg=a["co2e_kg"],
             water_l=a["water_l"],
-            created_at=a["created_at"]
-        )
-        for a in actions
-    ]
+            created_at=created
+        ))
+    return result
 
 
 @app.delete("/actions/{action_id}", tags=["Actions"])
