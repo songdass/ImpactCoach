@@ -1,0 +1,102 @@
+{
+  "mobility": {
+    "taxi_ice": {
+      "co2e_kg_per_km": 0.21,
+      "description": "Internal combustion engine taxi",
+      "water_l_per_km": 0.5
+    },
+    "taxi_ev": {
+      "co2e_kg_per_km": 0.05,
+      "description": "Electric vehicle taxi",
+      "water_l_per_km": 0.1
+    },
+    "bus": {
+      "co2e_kg_per_km": 0.089,
+      "description": "City bus (per passenger)",
+      "water_l_per_km": 0.2
+    },
+    "subway": {
+      "co2e_kg_per_km": 0.035,
+      "description": "Metro/subway (per passenger)",
+      "water_l_per_km": 0.05
+    },
+    "personal_car_gasoline": {
+      "co2e_kg_per_km": 0.192,
+      "description": "Personal gasoline car",
+      "water_l_per_km": 0.4
+    },
+    "personal_car_diesel": {
+      "co2e_kg_per_km": 0.171,
+      "description": "Personal diesel car",
+      "water_l_per_km": 0.35
+    },
+    "personal_car_ev": {
+      "co2e_kg_per_km": 0.047,
+      "description": "Personal electric vehicle",
+      "water_l_per_km": 0.08
+    },
+    "motorcycle": {
+      "co2e_kg_per_km": 0.103,
+      "description": "Motorcycle/scooter",
+      "water_l_per_km": 0.15
+    },
+    "bicycle": {
+      "co2e_kg_per_km": 0.0,
+      "description": "Bicycle (zero emissions)",
+      "water_l_per_km": 0.0
+    },
+    "walking": {
+      "co2e_kg_per_km": 0.0,
+      "description": "Walking (zero emissions)",
+      "water_l_per_km": 0.0
+    },
+    "domestic_flight": {
+      "co2e_kg_per_km": 0.255,
+      "description": "Domestic flight (per passenger)",
+      "water_l_per_km": 1.2
+    },
+    "train_ktx": {
+      "co2e_kg_per_km": 0.028,
+      "description": "KTX high-speed rail",
+      "water_l_per_km": 0.04
+    }
+  },
+  "home_energy": {
+    "electricity_kwh": {
+      "co2e_kg_per_unit": 0.459,
+      "description": "Electricity (Korea grid average 2024)",
+      "unit": "kWh"
+    },
+    "electricity_kwh_peak": {
+      "co2e_kg_per_unit": 0.55,
+      "description": "Electricity during peak hours (higher carbon intensity)",
+      "unit": "kWh"
+    },
+    "electricity_kwh_offpeak": {
+      "co2e_kg_per_unit": 0.38,
+      "description": "Electricity during off-peak hours",
+      "unit": "kWh"
+    },
+    "natural_gas_m3": {
+      "co2e_kg_per_unit": 2.23,
+      "description": "Natural gas for heating/cooking",
+      "unit": "m3"
+    },
+    "lpg_kg": {
+      "co2e_kg_per_unit": 2.98,
+      "description": "LPG (liquefied petroleum gas)",
+      "unit": "kg"
+    },
+    "district_heating_kwh": {
+      "co2e_kg_per_unit": 0.12,
+      "description": "District heating",
+      "unit": "kWh"
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "source": "Placeholder values based on Korea Environment Corporation and IPCC guidelines",
+    "last_updated": "2024-01-01",
+    "notes": "Values are approximations for MVP. Production version should use verified data sources."
+  }
+}
