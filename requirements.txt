@@ -1,0 +1,19 @@
+# Daily Action-to-Impact Coach - Dependencies
+
+# Backend
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.5.0
+
+# Frontend
+streamlit>=1.29.0
+requests>=2.31.0
+pandas>=2.1.0
+
+# Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+httpx>=0.25.0
+
+# Development (optional)
+python-dotenv>=1.0.0

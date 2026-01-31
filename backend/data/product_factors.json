@@ -1,0 +1,168 @@
+{
+  "purchase": {
+    "food": {
+      "beef_meal": {
+        "co2e_kg_per_unit": 6.5,
+        "water_l_per_unit": 1850,
+        "description": "Beef meal (200g serving)",
+        "unit": "meal"
+      },
+      "pork_meal": {
+        "co2e_kg_per_unit": 1.8,
+        "water_l_per_unit": 590,
+        "description": "Pork meal (200g serving)",
+        "unit": "meal"
+      },
+      "chicken_meal": {
+        "co2e_kg_per_unit": 1.1,
+        "water_l_per_unit": 430,
+        "description": "Chicken meal (200g serving)",
+        "unit": "meal"
+      },
+      "fish_meal": {
+        "co2e_kg_per_unit": 0.9,
+        "water_l_per_unit": 350,
+        "description": "Fish meal (200g serving)",
+        "unit": "meal"
+      },
+      "vegetarian_meal": {
+        "co2e_kg_per_unit": 0.4,
+        "water_l_per_unit": 180,
+        "description": "Vegetarian meal",
+        "unit": "meal"
+      },
+      "vegan_meal": {
+        "co2e_kg_per_unit": 0.3,
+        "water_l_per_unit": 150,
+        "description": "Vegan meal",
+        "unit": "meal"
+      },
+      "coffee": {
+        "co2e_kg_per_unit": 0.21,
+        "water_l_per_unit": 140,
+        "description": "Coffee (one cup)",
+        "unit": "cup"
+      },
+      "milk_liter": {
+        "co2e_kg_per_unit": 1.9,
+        "water_l_per_unit": 628,
+        "description": "Dairy milk (1 liter)",
+        "unit": "liter"
+      },
+      "oat_milk_liter": {
+        "co2e_kg_per_unit": 0.9,
+        "water_l_per_unit": 48,
+        "description": "Oat milk (1 liter)",
+        "unit": "liter"
+      }
+    },
+    "fashion": {
+      "tshirt_fastfashion": {
+        "co2e_kg_per_unit": 5.5,
+        "water_l_per_unit": 2700,
+        "description": "Fast fashion t-shirt",
+        "unit": "item"
+      },
+      "tshirt_sustainable": {
+        "co2e_kg_per_unit": 2.5,
+        "water_l_per_unit": 1200,
+        "description": "Sustainable/organic t-shirt",
+        "unit": "item"
+      },
+      "tshirt_secondhand": {
+        "co2e_kg_per_unit": 0.5,
+        "water_l_per_unit": 50,
+        "description": "Secondhand t-shirt",
+        "unit": "item"
+      },
+      "jeans_fastfashion": {
+        "co2e_kg_per_unit": 33.0,
+        "water_l_per_unit": 7500,
+        "description": "Fast fashion jeans",
+        "unit": "item"
+      },
+      "jeans_sustainable": {
+        "co2e_kg_per_unit": 15.0,
+        "water_l_per_unit": 3500,
+        "description": "Sustainable jeans",
+        "unit": "item"
+      },
+      "jeans_secondhand": {
+        "co2e_kg_per_unit": 1.5,
+        "water_l_per_unit": 100,
+        "description": "Secondhand jeans",
+        "unit": "item"
+      },
+      "sneakers_new": {
+        "co2e_kg_per_unit": 14.0,
+        "water_l_per_unit": 2200,
+        "description": "New sneakers",
+        "unit": "pair"
+      },
+      "sneakers_secondhand": {
+        "co2e_kg_per_unit": 1.4,
+        "water_l_per_unit": 100,
+        "description": "Secondhand sneakers",
+        "unit": "pair"
+      }
+    },
+    "electronics": {
+      "smartphone_new": {
+        "co2e_kg_per_unit": 70.0,
+        "water_l_per_unit": 12000,
+        "description": "New smartphone",
+        "unit": "item"
+      },
+      "smartphone_refurbished": {
+        "co2e_kg_per_unit": 15.0,
+        "water_l_per_unit": 2000,
+        "description": "Refurbished smartphone",
+        "unit": "item"
+      },
+      "laptop_new": {
+        "co2e_kg_per_unit": 350.0,
+        "water_l_per_unit": 50000,
+        "description": "New laptop",
+        "unit": "item"
+      },
+      "laptop_refurbished": {
+        "co2e_kg_per_unit": 70.0,
+        "water_l_per_unit": 5000,
+        "description": "Refurbished laptop",
+        "unit": "item"
+      }
+    },
+    "household": {
+      "plastic_bag": {
+        "co2e_kg_per_unit": 0.033,
+        "water_l_per_unit": 0.5,
+        "description": "Single-use plastic bag",
+        "unit": "item"
+      },
+      "reusable_bag": {
+        "co2e_kg_per_unit": 0.002,
+        "water_l_per_unit": 0.01,
+        "description": "Reusable bag (per use, amortized)",
+        "unit": "use"
+      },
+      "bottled_water_500ml": {
+        "co2e_kg_per_unit": 0.082,
+        "water_l_per_unit": 1.5,
+        "description": "500ml bottled water",
+        "unit": "bottle"
+      },
+      "tap_water_500ml": {
+        "co2e_kg_per_unit": 0.0001,
+        "water_l_per_unit": 0.5,
+        "description": "500ml tap water (in reusable bottle)",
+        "unit": "serving"
+      }
+    }
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "source": "Placeholder values based on various LCA studies and Carbon Trust data",
+    "last_updated": "2024-01-01",
+    "notes": "Values are approximations for MVP. Water footprint includes virtual water."
+  }
+}
