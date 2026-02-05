@@ -5,7 +5,7 @@ A minimal MVP for tracking daily environmental impact and receiving
 personalized recommendations for reducing carbon footprint.
 """
 
-from datetime import date, timedelta
+from datetime import date, datetime, timedelta
 from typing import List, Optional
 
 from fastapi import FastAPI, HTTPException, Query
@@ -41,6 +41,16 @@ from services import (
     generate_daily_summary,
     get_weekly_insight,
     FactorNotFoundError,
+    # Chatbot
+    parse_message,
+    generate_response,
+    get_chat_suggestions,
+    # Report
+    generate_text_report,
+    generate_html_report,
+    generate_markdown_report,
+    generate_json_report,
+    create_report_data,
 )
 
 
@@ -126,12 +136,12 @@ async def create_action(action: ActionLogCreate):
             item=action.item,
             amount=action.amount,
             subcategory=action.subcategory,
-            time_of_day=action.time_of_day,
+            time_of_day=action.time_of_day.value if action.time_of_day else "standard",
             location=action.location,
             notes=action.notes,
             co2e_kg=co2e_kg,
             water_l=water_l,
-            created_at=date.today()
+            created_at=datetime.now()
         )
 
     except FactorNotFoundError as e:
@@ -164,23 +174,34 @@ async def get_actions(
         query_date = target_date or date.today()
         actions = get_actions_by_date(query_date)
 
-    return [
-        ActionLogResponse(
+    result = []
+    for a in actions:
+        # Parse date
+        action_date = a["date"] if isinstance(a["date"], date) else date.fromisoformat(str(a["date"]))
+
+        # Parse created_at safely
+        created = a.get("created_at")
+        if created and isinstance(created, str):
+            try:
+                created = datetime.fromisoformat(created.replace('Z', '+00:00'))
+            except (ValueError, AttributeError):
+                created = None
+
+        result.append(ActionLogResponse(
             id=a["id"],
-            date=a["date"] if isinstance(a["date"], date) else date.fromisoformat(a["date"]),
+            date=action_date,
             category=ActionCategory(a["category"]),
             item=a["item"],
             amount=a["amount"],
-            subcategory=a["subcategory"],
-            time_of_day=a["time_of_day"],
-            location=a["location"],
-            notes=a["notes"],
+            subcategory=a.get("subcategory"),
+            time_of_day=a.get("time_of_day"),
+            location=a.get("location"),
+            notes=a.get("notes"),
             co2e_kg=a["co2e_kg"],
             water_l=a["water_l"],
-            created_at=a["created_at"]
-        )
-        for a in actions
-    ]
+            created_at=created
+        ))
+    return result
 
 
 @app.delete("/actions/{action_id}", tags=["Actions"])
@@ -350,6 +371,203 @@ async def list_factors_by_category(category: ActionCategory):
     """Get factors for a specific category."""
     factors = get_all_factors()
     return factors.get(category.value, [])
+
+
+# ============================================================================
+# Chatbot Endpoints
+# ============================================================================
+
+@app.post("/chat", tags=["Chatbot"])
+async def chat_message(message: dict):
+    """
+    Process a natural language message and return impact analysis.
+
+    Example messages:
+    - "오늘 택시로 5km 이동했어"
+    - "점심에 소고기 먹었어"
+    - "커피 3잔 마셨어"
+    """
+    user_message = message.get("message", "")
+    if not user_message:
+        return {"response": "메시지를 입력해주세요.", "actions": [], "impacts": []}
+
+    # Parse the message
+    parsed_actions = parse_message(user_message)
+
+    # Calculate impacts for each parsed action
+    impacts = []
+    saved_actions = []
+
+    for action in parsed_actions:
+        try:
+            co2e_kg, water_l = calculate_impact(
+                category=action.category,
+                item=action.item,
+                amount=action.amount
+            )
+
+            # Save to database
+            action_id = insert_action_log(
+                date_val=date.today(),
+                category=action.category,
+                item=action.item,
+                amount=action.amount,
+                co2e_kg=co2e_kg,
+                water_l=water_l
+            )
+
+            impacts.append({
+                "id": action_id,
+                "item": action.item,
+                "amount": action.amount,
+                "co2e_kg": co2e_kg,
+                "water_l": water_l
+            })
+
+            saved_actions.append({
+                "category": action.category,
+                "item": action.item,
+                "amount": action.amount,
+                "confidence": action.confidence
+            })
+
+        except FactorNotFoundError:
+            continue
+
+    # Generate response
+    response = generate_response(parsed_actions, impacts)
+
+    return {
+        "response": response,
+        "actions": saved_actions,
+        "impacts": impacts
+    }
+
+
+@app.get("/chat/suggestions", tags=["Chatbot"])
+async def get_suggestions():
+    """Get example chat suggestions for the user."""
+    return {"suggestions": get_chat_suggestions()}
+
+
+# ============================================================================
+# Report Generation Endpoints
+# ============================================================================
+
+@app.get("/report/daily", tags=["Reports"])
+async def get_daily_report(
+    target_date: Optional[date] = Query(None),
+    format: str = Query("text", description="Report format: text, html, markdown, json")
+):
+    """Generate a daily impact report in various formats."""
+    query_date = target_date or date.today()
+
+    # Get data
+    daily_totals = get_daily_totals(query_date)
+    top_contributors = get_top_contributors(query_date, limit=5)
+    actions = get_actions_by_date(query_date)
+    recommendations = get_recommendations(actions, max_recommendations=3)
+    streak = get_streak_days()
+
+    # Create report data
+    report_data = create_report_data(
+        target_date=query_date,
+        period="daily",
+        daily_totals=daily_totals,
+        top_contributors=top_contributors,
+        recommendations=recommendations,
+        streak_days=streak
+    )
+
+    # Generate report in requested format
+    if format == "html":
+        content = generate_html_report(report_data)
+        content_type = "text/html"
+    elif format == "markdown":
+        content = generate_markdown_report(report_data)
+        content_type = "text/markdown"
+    elif format == "json":
+        content = generate_json_report(report_data)
+        content_type = "application/json"
+    else:  # text
+        content = generate_text_report(report_data)
+        content_type = "text/plain"
+
+    return {
+        "format": format,
+        "content_type": content_type,
+        "report": content,
+        "date": query_date.isoformat()
+    }
+
+
+@app.get("/report/weekly", tags=["Reports"])
+async def get_weekly_report(
+    end_date: Optional[date] = Query(None),
+    format: str = Query("text", description="Report format: text, html, markdown, json")
+):
+    """Generate a weekly impact report."""
+    query_end = end_date or date.today()
+    query_start = query_end - timedelta(days=6)
+
+    # Aggregate weekly data
+    weekly_data = get_weekly_totals(query_end)
+
+    # Get all actions for the week
+    all_actions = get_actions_date_range(query_start, query_end)
+
+    # Calculate totals
+    total_co2e = sum(d.get("total_co2e", 0) for d in weekly_data)
+    total_water = sum(d.get("total_water", 0) for d in weekly_data)
+    total_actions = sum(d.get("action_count", 0) for d in weekly_data)
+
+    # Group by category
+    category_totals = {}
+    for action in all_actions:
+        cat = action["category"]
+        if cat not in category_totals:
+            category_totals[cat] = {"total_co2e": 0, "total_water": 0, "action_count": 0}
+        category_totals[cat]["total_co2e"] += action.get("co2e_kg", 0)
+        category_totals[cat]["total_water"] += action.get("water_l", 0)
+        category_totals[cat]["action_count"] += 1
+
+    # Get recommendations
+    recommendations = get_recommendations(all_actions, max_recommendations=3)
+
+    # Get top contributors (sort by co2e)
+    sorted_actions = sorted(all_actions, key=lambda x: x.get("co2e_kg", 0), reverse=True)
+    top_contributors = sorted_actions[:5]
+
+    # Create report data
+    report_data = create_report_data(
+        target_date=query_end,
+        period="weekly",
+        daily_totals=category_totals,
+        top_contributors=top_contributors,
+        recommendations=recommendations,
+        streak_days=get_streak_days()
+    )
+
+    # Generate report in requested format
+    if format == "html":
+        content = generate_html_report(report_data)
+        content_type = "text/html"
+    elif format == "markdown":
+        content = generate_markdown_report(report_data)
+        content_type = "text/markdown"
+    elif format == "json":
+        content = generate_json_report(report_data)
+        content_type = "application/json"
+    else:
+        content = generate_text_report(report_data)
+        content_type = "text/plain"
+
+    return {
+        "format": format,
+        "content_type": content_type,
+        "report": content,
+        "period": f"{query_start.isoformat()} to {query_end.isoformat()}"
+    }
 
 
 # ============================================================================

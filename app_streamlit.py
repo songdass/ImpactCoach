@@ -94,7 +94,7 @@ def render_sidebar():
         # Navigation
         page = st.radio(
             "Navigate",
-            ["📝 Log Action", "📊 Dashboard", "📈 Weekly Trend", "📚 Factor Reference"],
+            ["💬 Chatbot", "📝 Log Action", "📊 Dashboard", "📈 Weekly Trend", "📄 Reports", "📚 Factor Reference"],
             label_visibility="collapsed"
         )
 
@@ -419,6 +419,205 @@ def render_factor_reference_page():
 
 
 # ============================================================================
+# Chatbot Page
+# ============================================================================
+
+def render_chatbot_page():
+    """Render the chatbot interface page."""
+    st.header("💬 Impact Coach Chatbot")
+    st.markdown("자연어로 오늘의 활동을 입력하세요. 영향을 자동으로 계산합니다!")
+
+    # Initialize chat history in session state
+    if "chat_messages" not in st.session_state:
+        st.session_state.chat_messages = []
+
+    # Get suggestions
+    suggestions = api_get("/chat/suggestions")
+
+    # Display example suggestions
+    with st.expander("💡 Example inputs / 예시 입력"):
+        if suggestions:
+            cols = st.columns(2)
+            for i, suggestion in enumerate(suggestions.get("suggestions", [])):
+                with cols[i % 2]:
+                    if st.button(suggestion, key=f"sug_{i}"):
+                        st.session_state.pending_message = suggestion
+
+    st.markdown("---")
+
+    # Chat container
+    chat_container = st.container()
+
+    # Display chat history
+    with chat_container:
+        for message in st.session_state.chat_messages:
+            with st.chat_message(message["role"]):
+                st.markdown(message["content"])
+
+    # Chat input
+    if prompt := st.chat_input("오늘 뭘 하셨나요? (예: 택시로 5km 이동했어)"):
+        # Add user message to history
+        st.session_state.chat_messages.append({"role": "user", "content": prompt})
+
+        with chat_container:
+            with st.chat_message("user"):
+                st.markdown(prompt)
+
+            # Send to API
+            with st.chat_message("assistant"):
+                with st.spinner("분석 중..."):
+                    result = api_post("/chat", {"message": prompt})
+
+                if result:
+                    response = result.get("response", "죄송합니다. 처리 중 오류가 발생했습니다.")
+                    st.markdown(response)
+
+                    # Show parsed actions if any
+                    if result.get("actions"):
+                        with st.expander("📋 Parsed Actions"):
+                            for action in result["actions"]:
+                                st.write(f"- {action['item']}: {action['amount']} (confidence: {action['confidence']:.0%})")
+
+                    st.session_state.chat_messages.append({"role": "assistant", "content": response})
+                else:
+                    error_msg = "API 연결 오류. 서버가 실행 중인지 확인하세요."
+                    st.error(error_msg)
+                    st.session_state.chat_messages.append({"role": "assistant", "content": error_msg})
+
+    # Handle suggestion button clicks
+    if "pending_message" in st.session_state:
+        pending = st.session_state.pending_message
+        del st.session_state.pending_message
+
+        st.session_state.chat_messages.append({"role": "user", "content": pending})
+
+        result = api_post("/chat", {"message": pending})
+        if result:
+            st.session_state.chat_messages.append({"role": "assistant", "content": result.get("response", "")})
+
+        st.rerun()
+
+    # Clear chat button
+    col1, col2 = st.columns([4, 1])
+    with col2:
+        if st.button("🗑️ Clear Chat"):
+            st.session_state.chat_messages = []
+            st.rerun()
+
+
+# ============================================================================
+# Reports Page
+# ============================================================================
+
+def render_reports_page():
+    """Render the reports generation page."""
+    st.header("📄 Impact Reports")
+    st.markdown("일일/주간 영향 리포트를 생성하고 다운로드하세요.")
+
+    col1, col2 = st.columns(2)
+
+    with col1:
+        st.subheader("Daily Report")
+        report_date = st.date_input("Select Date", value=date.today(), key="daily_date")
+        daily_format = st.selectbox(
+            "Format",
+            ["text", "html", "markdown", "json"],
+            key="daily_format",
+            format_func=lambda x: {
+                "text": "📄 Plain Text",
+                "html": "🌐 HTML",
+                "markdown": "📝 Markdown",
+                "json": "🔧 JSON"
+            }[x]
+        )
+
+        if st.button("Generate Daily Report", type="primary", use_container_width=True):
+            with st.spinner("Generating report..."):
+                result = api_get("/report/daily", {
+                    "target_date": report_date.isoformat(),
+                    "format": daily_format
+                })
+
+            if result:
+                st.success("Report generated!")
+
+                # Display preview
+                with st.expander("Preview Report", expanded=True):
+                    if daily_format == "html":
+                        st.components.v1.html(result["report"], height=600, scrolling=True)
+                    elif daily_format == "json":
+                        st.json(result["report"])
+                    else:
+                        st.code(result["report"], language="markdown" if daily_format == "markdown" else None)
+
+                # Download button
+                file_ext = {"text": "txt", "html": "html", "markdown": "md", "json": "json"}[daily_format]
+                st.download_button(
+                    label="📥 Download Report",
+                    data=result["report"],
+                    file_name=f"impact_report_{report_date.isoformat()}.{file_ext}",
+                    mime=result["content_type"]
+                )
+
+    with col2:
+        st.subheader("Weekly Report")
+        end_date = st.date_input("Week Ending", value=date.today(), key="weekly_date")
+        weekly_format = st.selectbox(
+            "Format",
+            ["text", "html", "markdown", "json"],
+            key="weekly_format",
+            format_func=lambda x: {
+                "text": "📄 Plain Text",
+                "html": "🌐 HTML",
+                "markdown": "📝 Markdown",
+                "json": "🔧 JSON"
+            }[x]
+        )
+
+        if st.button("Generate Weekly Report", type="primary", use_container_width=True):
+            with st.spinner("Generating report..."):
+                result = api_get("/report/weekly", {
+                    "end_date": end_date.isoformat(),
+                    "format": weekly_format
+                })
+
+            if result:
+                st.success(f"Report generated for {result.get('period', 'last 7 days')}!")
+
+                # Display preview
+                with st.expander("Preview Report", expanded=True):
+                    if weekly_format == "html":
+                        st.components.v1.html(result["report"], height=600, scrolling=True)
+                    elif weekly_format == "json":
+                        st.json(result["report"])
+                    else:
+                        st.code(result["report"], language="markdown" if weekly_format == "markdown" else None)
+
+                # Download button
+                file_ext = {"text": "txt", "html": "html", "markdown": "md", "json": "json"}[weekly_format]
+                st.download_button(
+                    label="📥 Download Report",
+                    data=result["report"],
+                    file_name=f"impact_weekly_{end_date.isoformat()}.{file_ext}",
+                    mime=result["content_type"]
+                )
+
+    st.markdown("---")
+
+    # Quick today's summary
+    st.subheader("📊 Quick Summary")
+    coaching = api_get("/coach/daily")
+    if coaching:
+        col1, col2, col3 = st.columns(3)
+        with col1:
+            st.metric("Today's CO₂e", f"{coaching['impact_summary']['total_co2e_kg']:.2f} kg")
+        with col2:
+            st.metric("Today's Water", f"{coaching['impact_summary']['total_water_l']:.0f} L")
+        with col3:
+            st.metric("Actions", coaching['impact_summary']['action_count'])
+
+
+# ============================================================================
 # Main Application
 # ============================================================================
 
@@ -446,12 +645,16 @@ def main():
     page = render_sidebar()
 
     # Render selected page
-    if page == "📝 Log Action":
+    if page == "💬 Chatbot":
+        render_chatbot_page()
+    elif page == "📝 Log Action":
         render_log_action_page()
     elif page == "📊 Dashboard":
         render_dashboard_page()
     elif page == "📈 Weekly Trend":
         render_weekly_trend_page()
+    elif page == "📄 Reports":
+        render_reports_page()
     elif page == "📚 Factor Reference":
         render_factor_reference_page()
 
